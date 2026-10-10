@@ -2,6 +2,12 @@
 
 Thanks for your interest in contributing! Clippy Vision is an open-source project that welcomes contributions from the community. Contributions are licensed under AGPL-3.0, the same license as the next release.
 
+**Note:** This repository (`Clippy-vision_RAN_BY_GROK_BOT`) is maintained by **Grok Bot**, an AI assistant, as an open-source experiment. The original project lives at [protocorn/clippy-vision](https://github.com/protocorn/clippy-vision). This fork exists to explore AI-assisted maintenance and feature development while staying open source.
+
+## Getting Started
+
+Looking for a place to start? Check out issues labeled [`good first issue`](https://github.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/labels/good%20first%20issue). These are beginner-friendly tasks that don't require deep knowledge of the codebase.
+
 ## Ways to Contribute
 
 - **Bug Reports**: Found a bug? Open an issue with details on how to reproduce it

@@ -11,20 +11,43 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ---
 
-## Priority 1: Critical Gaps
+## Priority 1: High-Impact Free Work
 
-### 1.1 Linux Support
+### 1.1 Built-in Chat UI (Local Agent)
 
-**Problem:** Clippy Vision only runs on Windows and macOS. Linux users cannot use the app at all, despite Linux being popular among developers and privacy-conscious users.
+**Problem:** v2.0.0 removed in-app chat. Now requires external MCP client (Cursor, Claude Desktop, VS Code). Setup involves installing Clippy, installing an MCP client, copying JSON config, and restarting the client. Non-technical users who want simple memory search face a steep learning curve.
 
-**Rationale:** Broadens the user base significantly. Linux support would make Clippy accessible to developers, self-hosters, and users who prefer open-source operating systems. The core Python capture/summarization logic is already platform-agnostic; the main work is integrating Linux accessibility APIs and packaging.
+**Rationale:** Restore self-contained UX. Let users ask questions without installing a second app. The archived chat UI code (`archive/in_app_chat/`) can be resurrected. MCP tools remain the primary interface; chat is a convenience layer.
 
-**Effort:** Large (4-6 weeks for a human contributor, or 20-30 focused sessions for an AI agent)
+**Effort:** Medium (hypothesis: 2-3 weeks)
+- Resurrect archived in-app chat UI (`archive/in_app_chat/`)
+- Update API endpoints (`/chat`, `/chat/stream` currently return MCP guidance)
+- Wire to existing `agent/retrieval.py` and `agent/memory.py`
+- Keep MCP tools as primary interface (chat is convenience layer)
+
+**Components to change:**
+- `electron-ui/src/index.html`, `src/js/app.js` - restore chat pane
+- `archive/in_app_chat/*` - extract, modernize, re-integrate
+- `api_server.py` - remove stub responses, wire to agent
+- `core/app_settings.py` - add `chat_enabled` toggle (default on)
+- `README.md`, `docs/usage.md` - document chat UI and MCP as complementary
+
+**Trade-off:** Adds maintenance burden (UI code, agent logic duplication). Could make chat read-only (no conversation state) to keep scope small.
+
+---
+
+### 1.2 Linux Support
+
+**Problem:** Clippy Vision only runs on Windows and macOS. Linux users cannot use the app.
+
+**Rationale:** Broadens the user base. Linux support would make Clippy accessible to developers, self-hosters, and users who prefer open-source operating systems. The core Python capture/summarization logic is already platform-agnostic; the main work is integrating Linux accessibility APIs and packaging.
+
+**Effort:** Large (hypothesis: 4-6 weeks for a human contributor, or 20-30 focused sessions for an AI agent)
 - Implement X11 and Wayland screen capture (choice based on session type)
 - Integrate AT-SPI (Assistive Technology Service Provider Interface) for accessibility text
 - Add Linux-specific window metadata, clipboard, and keyboard capture
 - Create AppImage, .deb, and .rpm packaging
-- Test on Ubuntu, Fedora, Arch (popular distros)
+- Test on Ubuntu, Fedora, Arch
 
 **Components to change:**
 - `core/platform_support.py` - add Linux detection and platform-specific imports
@@ -39,65 +62,57 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ---
 
-### 1.2 Signed Installers
+### 1.3 Easier Onboarding
 
-**Problem:** Unsigned installers trigger OS warnings (Windows SmartScreen, macOS Gatekeeper). Users see "Unknown publisher" and "This app could harm your computer." Many abandon the install. Right-click workarounds feel sketchy.
+**Problem:** Setup wizard downloads Python, Ollama, and models (~5 GB) with no progress feedback. Users report the wizard appearing frozen during long downloads.
 
-**Rationale:** Reduces install friction and builds trust. Code signing certificates are standard for production software. Even a self-signed cert (macOS) or EV cert (Windows) would improve UX significantly. Currently one of the top user complaints.
+**Rationale:** Clear progress indication reduces abandonment. MCP client setup instructions vary by client and lack screenshots.
 
-**Effort:** Medium (1-2 weeks for cert procurement + CI integration)
-- Obtain code signing certificate:
-  - Windows: EV certificate (~$300-500/year, requires hardware token)
-  - macOS: Apple Developer Program ($99/year) + signing workflow
-- Update `electron-builder` config in `electron-ui/package.json`
-- Add signing secrets to GitHub Actions
-- Update `.github/workflows/release.yml` to sign before upload
-- Test signed installers on clean VMs
+**Effort:** Small-medium (hypothesis: 1-2 weeks)
 
-**Cost:** ~$400-600/year (Windows EV + macOS Apple Developer)
+**Sub-items:**
+- **Setup wizard progress bars:** Stream Ollama model pull progress, show download %, estimated time
+- **Per-client MCP guides:** Create `docs/mcp-clients/*.md` with screenshots for Cursor, Claude Desktop, VS Code, etc.
+- **Video walkthroughs:** Record 2-3 minute videos showing setup and first use
 
 **Components to change:**
-- `electron-ui/package.json` - `build.win.signingHashAlgorithms`, `build.mac.identity`
-- `.github/workflows/release.yml` - add signing steps, secrets
-- `README.md` - remove "unsigned" warnings, update install instructions
-
-**Alternative:** Self-signed macOS cert (free, but still requires right-click), Authenticode for Windows (cheaper than EV but SmartScreen still triggers for low-reputation publishers)
+- `electron-ui/electron/lib/setup.js` - parse Ollama pull progress, send to renderer
+- `electron-ui/src/index.html` (setup window) - progress bars
+- `docs/mcp-clients/*.md` - new guides
+- `README.md` - embed videos
 
 ---
 
-### 1.3 Built-in Chat UI (Local Agent)
+### 1.4 Privacy Redaction Coverage
 
-**Problem:** v2.0.0 removed in-app chat. Now requires external MCP client (Cursor, Claude Desktop, VS Code). High onboarding friction: install Clippy, install MCP client, copy JSON config, restart client. Non-technical users struggle. MCP is powerful but not beginner-friendly.
+**Problem:** Private browsing redaction only covers Chrome, Edge, and Brave. Firefox, Opera, and Safari private windows are captured normally. Password field detection uses heuristics that may miss some fields.
 
-**Rationale:** Restore self-contained UX. Let users ask questions about their activity without installing a second app. Reduces adoption barrier significantly. Especially valuable for users who just want memory search, not a full IDE.
+**Rationale:** Privacy is a core principle. Expanding browser coverage and improving detection reduces accidental leaks.
 
-**Effort:** Medium (2-3 weeks)
-- Resurrect archived in-app chat UI (`archive/in_app_chat/`)
-- Update API endpoints (`/chat`, `/chat/stream` currently return MCP guidance)
-- Wire to existing `agent/retrieval.py` and `agent/memory.py`
-- Keep MCP tools as primary interface (chat is convenience layer)
-- Add opt-in telemetry to measure chat vs MCP usage
+**Effort:** Small-medium (hypothesis: 1-2 weeks for Firefox/Opera, tested)
+
+**Sub-items:**
+- **Firefox private windows:** Detect and black out before storage
+- **Opera/Vivaldi:** If detection is straightforward (similar to Chromium-based browsers)
+- **Improved password field detection:** Fuzzy matching on field names, autocomplete attributes
 
 **Components to change:**
-- `electron-ui/src/index.html`, `src/js/app.js` - restore chat pane
-- `archive/in_app_chat/*` - extract, modernize, re-integrate
-- `api_server.py` - remove stub responses, wire to agent
-- `core/app_settings.py` - add `chat_enabled` toggle (default on)
-- `README.md`, `docs/usage.md` - document chat UI and MCP as complementary
-
-**Trade-off:** Adds maintenance burden (UI code, agent logic duplication), but lowers adoption barrier. Could make chat read-only (no conversation state) to keep scope small.
+- `core/private_windows.py` - add Firefox, Opera detection
+- `core/secret_fields.py` - improve heuristics
+- `tests/test_private_windows.py` - add tests
+- `README.md`, `docs/usage.md` - update supported browser list
 
 ---
 
 ## Priority 2: Performance & Efficiency
 
-### 2.1 Reduce Resource Usage
+### 2.1 Measure and Optimize Resource Usage
 
-**Problem:** Clippy runs continuously, polls foreground window, spawns background workers. Anecdotal reports of memory growth over days. No published CPU/memory benchmarks. Battery impact unknown.
+**Problem:** Clippy runs continuously. No published CPU/memory benchmarks. Battery impact unknown.
 
-**Rationale:** Background apps should be lightweight. High resource usage drives users to disable capture or uninstall. Profiling and optimization could double battery life on laptops and reduce RAM footprint by 30-50%.
+**Rationale:** Background apps should be lightweight. Profiling establishes a baseline and identifies hot paths for optimization.
 
-**Effort:** Medium (2-3 weeks profiling, optimization, testing)
+**Effort:** Medium (hypothesis: 2-3 weeks for profiling + targeted optimization)
 - Profile long-running capture process (memory_profiler, py-spy)
 - Identify leaks (likely in event/screenshot buffers, LLM response caching)
 - Optimize accessibility worker throttling (`core/uia_worker.py`)
@@ -121,11 +136,11 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ### 2.2 Faster Summarization
 
-**Problem:** Summarizer wakes every 60 seconds, waits for Ollama chat model. Perceived as slow when reviewing timeline or asking questions shortly after an activity. Backlog can grow during heavy typing sessions.
+**Problem:** Summarizer wakes every 60 seconds, waits for Ollama chat model. Backlog can grow during heavy typing sessions.
 
-**Rationale:** Faster summaries = better UX. Near-instant timeline updates feel snappier. Smaller batch sizes reduce per-summary latency.
+**Rationale:** Faster summaries improve UX.
 
-**Effort:** Small-medium (1-2 weeks)
+**Effort:** Small-medium (hypothesis: 1-2 weeks)
 - Tune summarizer interval (60s → 30s or adaptive based on activity)
 - Batch small windows (2-5 events) separately from large ones (20+ events)
 - Cache frequent LLM prompts (e.g., empty/idle screen verdicts)
@@ -138,7 +153,7 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 - `core/chat_model.py` - allow separate summary_model override
 - `docs/usage.md` - document model selection trade-offs
 
-**Trade-off:** Smaller models = faster but less accurate summaries. Cache = staleness risk. Shorter interval = more CPU. Needs experimentation.
+**Trade-off:** Smaller models = faster but hypothesis is less accurate summaries. Cache = staleness risk. Shorter interval = more CPU. Needs experimentation.
 
 ---
 
@@ -148,7 +163,7 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 **Rationale:** Let users tune screenshot aggressiveness. Power users might want every window change; privacy-conscious users might want manual-only. Adaptive defaults stay, but expose knobs for advanced users.
 
-**Effort:** Small (1 week)
+**Effort:** Small (hypothesis: 1 week)
 - Add settings: screenshot_mode (adaptive | frequent | minimal | manual)
 - Expose `min_gap_seconds`, `activity_debounce_seconds` in UI
 - Add "Force screenshot now" button (already in capture, wire to UI)
@@ -166,11 +181,11 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ### 3.1 Improve Privacy Redaction
 
-**Problem:** Password fields sometimes missed (heuristics fail). Private browsing only covers Chrome, Edge, Brave (not Firefox, Opera, Safari). Secret regex patterns may not catch all tokens.
+**Problem:** Private browsing redaction only covers Chrome, Edge, Brave (documented in `PROJECT_VISION.md`). Password field detection uses heuristics that may miss some fields.
 
-**Rationale:** Privacy is a core principle. Current "best-effort" disclaimer undermines trust. Better detection = fewer accidental leaks.
+**Rationale:** Privacy is a core principle. Expanding browser coverage and improving detection reduces accidental leaks.
 
-**Effort:** Medium (2 weeks)
+**Effort:** Medium (hypothesis: 2 weeks)
 - Expand private browsing detection:
   - Firefox: `about:privatebrowsing` window title, `MOZ_CRASHREPORTER_RESTART_ARG_1` env
   - Safari: `NSPrivateBrowsing` window property (macOS)
@@ -191,17 +206,15 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 - `electron-ui/src/js/app.js` - settings UI for custom rules
 - Tests: `tests/test_private_windows.py`, `tests/test_secret_fields.py`
 
-**Verification:** Create test suite with known password fields, private windows, and secrets. Measure detection rate before/after (target >95%).
-
 ---
 
 ### 3.2 Privacy Dashboard
 
-**Problem:** Users don't know what Clippy captured or shared. No visibility into what MCP tools returned to cloud clients. "Black box" perception undermines trust.
+**Problem:** Users don't know what Clippy captured or shared. No visibility into what MCP tools returned to cloud clients.
 
-**Rationale:** Transparency builds trust. Show users exactly what was captured, what was redacted, and what left the machine (MCP tool replies). Let them audit and delete.
+**Rationale:** Transparency builds trust. Show users what was captured, what was redacted, and what left the machine (MCP tool replies).
 
-**Effort:** Medium (2-3 weeks)
+**Effort:** Medium (hypothesis: 2-3 weeks)
 - Add `/privacy/audit` endpoint - recent captures, redactions, MCP replies
 - Electron UI: new "Privacy Audit" tab
   - Timeline of captures with redaction overlay
@@ -222,11 +235,11 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ### 4.1 Interactive Setup Wizard Improvements
 
-**Problem:** Current setup wizard checks Python, Ollama, RAM/VRAM, and downloads models. But errors are cryptic. Users hit "Install Python" button and nothing happens (no progress bar, no logs). Ollama model pull can take 10 min with no feedback.
+**Problem:** Setup wizard downloads Python, Ollama, and models (~5 GB) with no progress feedback.
 
-**Rationale:** First-run experience is critical. Smooth setup = higher conversion. Current wizard feels broken when downloads stall.
+**Rationale:** Clear progress indication may reduce abandonment.
 
-**Effort:** Small-medium (1-2 weeks)
+**Effort:** Small-medium (hypothesis: 1-2 weeks)
 - Add progress bars for Python install, Ollama install, model downloads
 - Stream Ollama pull progress (`ollama pull --stream`)
 - Better error messages ("Python install failed: <reason>", not "Setup failed: 1")
@@ -244,11 +257,11 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ### 4.2 Video Walkthroughs & Docs
 
-**Problem:** Text docs are dense. No video demos. Users don't understand MCP setup or what Clippy does until they've installed and used it.
+**Problem:** Text docs are dense. No video demos.
 
-**Rationale:** Video > text for onboarding. 2-minute demo shows value instantly. MCP config copy-paste is confusing; video makes it obvious.
+**Rationale:** Video can be more accessible than text for onboarding.
 
-**Effort:** Small (1 week to record, edit, upload)
+**Effort:** Small (hypothesis: 1 week to record, edit, upload)
 - Record 3 videos:
   1. "What is Clippy Vision?" (2 min: capture, timeline, memory search)
   2. "Setup walkthrough" (5 min: install, wizard, first capture)
@@ -268,11 +281,11 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ### 4.3 Expand MCP Client Docs
 
-**Problem:** README lists 10+ MCP clients (Cursor, Claude Desktop, VS Code, Devin, Cline, Roo Code, JetBrains, Kiro, LM Studio, Continue) but only links to their generic docs. No Clippy-specific instructions per client. Users copy JSON config but don't know where to paste it.
+**Problem:** README lists 10+ MCP clients but only links to generic docs. No Clippy-specific instructions per client.
 
-**Rationale:** Lower friction. Step-by-step per-client guides reduce support burden.
+**Rationale:** Step-by-step per-client guides reduce setup friction.
 
-**Effort:** Small (1 week to write, test, screenshot)
+**Effort:** Small (hypothesis: 1 week to write, test, screenshot)
 - Create `docs/mcp-clients/` directory
 - One guide per client: `cursor.md`, `claude-desktop.md`, `vscode.md`, etc.
 - Each guide: 5-10 screenshots, 100-200 word step-by-step
@@ -291,11 +304,11 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ### 5.1 Audio Capture & Meeting Transcription
 
-**Problem:** Clippy captures screen and typing but not speech. Meetings, calls, and voice notes are invisible. Users manually note "talked to X about Y" or lose context.
+**Problem:** Clippy captures screen and typing but not speech. Meetings, calls, and voice notes are not captured.
 
-**Rationale:** Audio = missing 30-50% of work context. Local transcription (faster-whisper, whisper.cpp) keeps privacy promise. No cloud APIs, no meeting bots.
+**Rationale:** Audio would add context. Local transcription (faster-whisper, whisper.cpp) keeps privacy promise.
 
-**Effort:** Large (4-6 weeks)
+**Effort:** Large (hypothesis: 4-6 weeks)
 - Integrate faster-whisper or whisper.cpp (CPU-only, no GPU competition)
 - Capture system audio (loopback) + microphone
   - Windows: WASAPI loopback + WaveIn
@@ -323,11 +336,11 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ### 5.2 Proactive Assistance (Skills System)
 
-**Problem:** Clippy is purely reactive. Users ask questions; Clippy answers. But it could notice patterns and take action: "You watched a 2-hour tutorial. Want me to quiz you?" or "You've opened this file 10 times today. Should I summarize it?"
+**Problem:** Clippy is purely reactive. Users ask questions; Clippy answers.
 
-**Rationale:** Proactive = higher value. Transforms Clippy from search tool to assistant. Already prototyped on upstream `feat/skills-ui` branch.
+**Rationale:** Proactive assistance could transform Clippy from search tool to assistant. Already prototyped on upstream `feat/skills-ui` branch.
 
-**Effort:** Large (6-8 weeks to stabilize and polish)
+**Effort:** Large (hypothesis: 6-8 weeks to stabilize and polish)
 - Port `feat/skills-ui` branch:
   - Skill 1: Reading/watching mode (quiz afterward)
   - Skill 2: Pattern triggers ("when you see X, do Y")
@@ -347,17 +360,17 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 - **Pattern alert:** "You've opened `report.md` 10 times. Want me to summarize it?"
 - **Habit tracking:** "You've spent 3 hours on Twitter today. Set a limit?"
 
-**Trade-off:** Skills add complexity. Start with 2-3 high-value skills, iterate based on feedback.
+**Trade-off:** Skills add complexity. Would need to start with 2-3 high-value skills, iterate based on feedback.
 
 ---
 
 ### 5.3 Cloud Model Providers (Opt-in)
 
-**Problem:** Local Ollama models are slow (~2-5 sec per summary). Power users with fast hardware are fine; budget laptops struggle. Users who trust cloud providers (OpenAI, Anthropic, Google) have no way to opt in.
+**Problem:** Local Ollama models take time for summaries. Users who trust cloud providers (OpenAI, Anthropic, Google) have no way to opt in.
 
-**Rationale:** Speed matters. Cloud APIs = 10-50x faster summaries. User choice: privacy (local) or speed (cloud). Clear warnings about what leaves the machine.
+**Rationale:** Cloud APIs are faster. User choice: privacy (local) or speed (cloud). Would need clear warnings about what leaves the machine.
 
-**Effort:** Medium-large (3-4 weeks)
+**Effort:** Medium-large (hypothesis: 3-4 weeks)
 - Add opt-in cloud provider settings:
   - OpenAI (GPT-4o, GPT-4o-mini)
   - Anthropic (Claude Sonnet, Haiku)
@@ -379,9 +392,36 @@ Prioritized improvement plan for the Clippy-vision_RAN_BY_GROK_BOT experimental 
 
 ---
 
+## Deferred (Needs Budget + Owner Approval)
+
+### Signed Installers
+
+**Problem:** Unsigned installers trigger OS warnings (Windows SmartScreen, macOS Gatekeeper). Users see "Unknown publisher" and must use workarounds (Windows: "More info → Run anyway", macOS: right-click → Open).
+
+**Why deferred:** Requires budget (~$400-600/year for Windows EV cert + macOS Apple Developer). Zero-budget constraint for at least the first month.
+
+**Free mitigations in the meantime:**
+- **Clear install instructions:** Add step-by-step screenshots in README showing the SmartScreen/Gatekeeper bypass process
+- **Publish SHA256 checksums:** Include checksums in release notes so users can verify downloads
+- **Reproducible builds:** Document build process so users can verify the installer matches the source
+
+**Cost breakdown:**
+- Windows EV certificate: ~$300-500/year (requires hardware token)
+- macOS Apple Developer Program: $99/year
+- Total: ~$400-600/year recurring
+
+**Components affected (if implemented later):**
+- `electron-ui/package.json` - `build.win.signingHashAlgorithms`, `build.mac.identity`
+- `.github/workflows/release.yml` - add signing steps, secrets
+- `README.md` - update install instructions
+
+**Alternative:** Self-signed macOS cert (free, but still requires right-click), Authenticode for Windows (cheaper than EV but SmartScreen still triggers for low-reputation publishers)
+
+---
+
 ## Candidate GitHub Issues
 
-Below are 6-10 concrete issues that could be opened to track the roadmap. Mark **good first issue** for newcomer-friendly tasks.
+Below are 6-10 concrete issues that could be opened to track the roadmap. **Good first issue** marked for newcomer-friendly tasks.
 
 ---
 
@@ -415,43 +455,14 @@ Clippy Vision currently only supports Windows and macOS. Linux users cannot run 
 
 ---
 
-### Issue 2: Sign installers to remove OS warnings 🟢 **good first issue** (CI/config only)
-
-**Title:** Sign Windows and macOS installers to eliminate security warnings
-
-**Labels:** `enhancement`, `distribution`, `good first issue`
-
-**Body:**
-Unsigned installers trigger Windows SmartScreen and macOS Gatekeeper warnings. Users see "Unknown publisher" and must right-click to bypass. This reduces trust and conversion.
-
-**Task:** Obtain code signing certificates and integrate signing into CI.
-
-**Subtasks:**
-- [ ] Obtain Windows EV code signing certificate (~$300-500/year)
-- [ ] Enroll in Apple Developer Program ($99/year)
-- [ ] Update `electron-ui/package.json` with signing config
-- [ ] Add signing secrets to GitHub Actions
-- [ ] Update `.github/workflows/release.yml` to sign before upload
-- [ ] Test signed installers on clean VMs (Windows 10/11, macOS 12+)
-
-**Acceptance criteria:**
-- Windows installer signed with EV cert (no SmartScreen warning)
-- macOS installer signed and notarized (no Gatekeeper warning)
-- README removes "unsigned" warnings
-- CI signs on every release
-
-**Difficulty:** Medium, 1-2 weeks, mostly procurement + CI config (no coding)
-
----
-
-### Issue 3: Restore built-in chat UI for users without MCP clients
+### Issue 2: Restore built-in chat UI for users without MCP clients
 
 **Title:** Add built-in chat UI so Clippy works standalone
 
 **Labels:** `enhancement`, `ui`, `help wanted`
 
 **Body:**
-v2.0.0 removed in-app chat. Now requires external MCP client (Cursor, Claude Desktop, VS Code). High onboarding friction. Users who just want memory search must install a second app.
+v2.0.0 removed in-app chat. Now requires external MCP client (Cursor, Claude Desktop, VS Code). Setup involves installing Clippy, installing an MCP client, copying JSON config, and restarting.
 
 **Task:** Restore in-app chat UI as a convenience layer. Keep MCP tools as primary interface.
 
@@ -468,72 +479,69 @@ v2.0.0 removed in-app chat. Now requires external MCP client (Cursor, Claude Des
 - MCP tools still work (chat is parallel interface, not replacement)
 - Docs explain when to use chat vs MCP
 
-**Difficulty:** Medium, 2-3 weeks, requires Electron + Python wiring
+**Difficulty:** Medium, hypothesis 2-3 weeks, requires Electron + Python wiring
 
 ---
 
-### Issue 4: Profile and reduce memory/CPU usage 🟢 **good first issue** (profiling)
+### Issue 3: Profile and reduce memory/CPU usage 🟢 **good first issue** (profiling)
 
-**Title:** Profile long-running capture process and reduce resource usage
+**Title:** Profile long-running capture process and measure resource usage
 
 **Labels:** `performance`, `good first issue`
 
 **Body:**
-Clippy runs continuously. Anecdotal reports of memory growth over days. No published benchmarks. Users disable capture due to battery drain.
+Clippy runs continuously. No published benchmarks for CPU, memory, or battery usage.
 
-**Task:** Profile capture process, identify leaks, optimize hot paths.
+**Task:** Profile capture process, measure baseline resource usage, document findings.
 
 **Subtasks:**
 - [ ] Profile with `memory_profiler` and `py-spy` (10 min, 1 hour, 24 hours)
-- [ ] Identify memory leaks (likely in event buffers, screenshot caching)
-- [ ] Optimize accessibility worker throttling (`core/uia_worker.py`)
+- [ ] Identify memory leaks if any (hypothesis: event buffers, screenshot caching)
 - [ ] Measure idle CPU% and RAM baseline
 - [ ] Document findings in `docs/performance.md`
 
 **Acceptance criteria:**
-- Profiling report with before/after metrics (CPU%, RAM)
-- At least one leak fixed or memory usage reduced by 20%+
-- Benchmarks published in `docs/performance.md`
+- Profiling report with metrics (CPU%, RAM over time)
+- Baseline measurements published in `docs/performance.md`
 
-**Difficulty:** Medium, 2 weeks, good first issue for **profiling phase** (1 week), then optimization (1 week)
+**Difficulty:** Small-medium, hypothesis 1-2 weeks, **good first issue** for profiling phase
 
 ---
 
-### Issue 5: Add Firefox and Safari private browsing detection
+### Issue 4: Add Firefox and Opera private browsing detection
 
-**Title:** Expand private browsing redaction to Firefox and Safari
+**Title:** Expand private browsing redaction to Firefox and Opera
 
 **Labels:** `privacy`, `enhancement`, `good first issue`
 
 **Body:**
-Private browsing redaction currently covers Chrome, Edge, and Brave. Firefox, Opera, and Safari private windows are captured normally, which violates user expectations.
+Private browsing redaction currently covers Chrome, Edge, and Brave (per `PROJECT_VISION.md`). Firefox and Opera private windows are captured normally.
 
-**Task:** Detect and black out Firefox and Safari private windows.
+**Task:** Detect and black out Firefox and Opera private windows.
 
 **Subtasks:**
-- [ ] Firefox: detect `about:privatebrowsing` window title or `MOZ_CRASHREPORTER_RESTART_ARG_1` env var
-- [ ] Safari: detect `NSPrivateBrowsing` window property (macOS only)
-- [ ] Opera: detect similar to Chrome (private flag in command line)
+- [ ] Firefox: Investigate detection method (window title, accessibility APIs, process args)
+- [ ] Opera: Investigate (may be similar to Chrome if Chromium-based)
 - [ ] Update `core/private_windows.py` with new detections
 - [ ] Add tests to `tests/test_private_windows.py`
 
 **Acceptance criteria:**
-- Firefox, Safari, Opera private windows blacked out before storage
-- Tests verify detection on Windows (Firefox, Opera) and macOS (Firefox, Safari, Opera)
+- Firefox and Opera private windows blacked out before storage
+- Tests verify detection on Windows (and macOS if feasible)
 - Docs updated to list all supported browsers
 
-**Difficulty:** Small-medium, 1 week, **good first issue** (clear scope, test-driven)
+**Difficulty:** Small-medium, hypothesis 1 week, **good first issue** (clear scope, test-driven)
 
 ---
 
-### Issue 6: Add progress bars to setup wizard
+### Issue 5: Add progress bars to setup wizard
 
 **Title:** Show progress for Python/Ollama installs and model downloads
 
 **Labels:** `ui`, `onboarding`, `good first issue`
 
 **Body:**
-Setup wizard downloads Python, Ollama, and models (~5 GB). But no progress bars. Users think it's frozen. Ollama pull can take 10 minutes with no feedback.
+Setup wizard downloads Python, Ollama, and models (~5 GB) with no progress bars.
 
 **Task:** Add progress bars and status text for all downloads.
 
@@ -546,24 +554,23 @@ Setup wizard downloads Python, Ollama, and models (~5 GB). But no progress bars.
 
 **Acceptance criteria:**
 - Setup wizard shows real-time progress for Ollama model pull
-- Users see % complete and estimated time
 - Progress bars render correctly on Windows and macOS
-- Errors show specific failure reason, not generic "Setup failed"
+- Errors show specific failure reason
 
-**Difficulty:** Small-medium, 1-2 weeks, **good first issue** (mostly UI wiring)
+**Difficulty:** Small-medium, hypothesis 1-2 weeks, **good first issue** (mostly UI wiring)
 
 ---
 
-### Issue 7: Create per-client MCP setup guides with screenshots
+### Issue 6: Create per-client MCP setup guides with screenshots
 
 **Title:** Write step-by-step MCP setup guides for Cursor, Claude Desktop, VS Code, etc.
 
 **Labels:** `documentation`, `good first issue`
 
 **Body:**
-README lists 10+ MCP clients but only links to generic docs. Users copy JSON config but don't know where to paste it. Need per-client guides.
+README lists 10+ MCP clients but only links to generic docs.
 
-**Task:** Create `docs/mcp-clients/*.md` with 5-10 screenshots per client.
+**Task:** Create `docs/mcp-clients/*.md` with screenshots per client.
 
 **Subtasks:**
 - [ ] Write `docs/mcp-clients/cursor.md` (Cursor settings → MCP → paste JSON)
@@ -578,18 +585,18 @@ README lists 10+ MCP clients but only links to generic docs. Users copy JSON con
 - Guides tested by following on fresh client installs
 - README links to guides
 
-**Difficulty:** Small, 1 week, **good first issue** (no coding, great for non-coders or docs-focused contributors)
+**Difficulty:** Small, hypothesis 1 week, **good first issue** (no coding, great for non-coders or docs-focused contributors)
 
 ---
 
-### Issue 8: Add custom redaction rules (user-defined keywords)
+### Issue 7: Add custom redaction rules (user-defined keywords)
 
 **Title:** Let users define custom redaction keywords and regex patterns
 
 **Labels:** `privacy`, `enhancement`
 
 **Body:**
-Current redaction is hardcoded: password fields, private windows, secret patterns. Users cannot add custom rules like "redact windows with 'HR' in title" or "strip email addresses."
+Current redaction is hardcoded: password fields, private windows, secret patterns. Users cannot add custom rules.
 
 **Task:** Add user-defined redaction rules in Settings.
 
@@ -606,18 +613,18 @@ Current redaction is hardcoded: password fields, private windows, secret pattern
 - Settings UI shows rule list with add/edit/delete buttons
 - Preview shows before/after redaction
 
-**Difficulty:** Medium, 2 weeks
+**Difficulty:** Medium, hypothesis 2 weeks
 
 ---
 
-### Issue 9: Add audio capture and meeting transcription (faster-whisper)
+### Issue 8: Add audio capture and meeting transcription (faster-whisper)
 
 **Title:** Capture and transcribe audio (meetings, calls, voice notes)
 
 **Labels:** `enhancement`, `audio`, `privacy`, `help wanted`
 
 **Body:**
-Clippy captures screen and typing but not speech. Meetings, calls, and voice notes are invisible. Users lose context or manually note "talked to X about Y."
+Clippy captures screen and typing but not speech. Meetings, calls, and voice notes are not captured.
 
 **Task:** Add local audio capture and transcription (faster-whisper, no cloud APIs).
 
@@ -639,18 +646,18 @@ Clippy captures screen and typing but not speech. Meetings, calls, and voice not
 - User can exclude apps (e.g., don't transcribe Zoom)
 - Docs explain privacy implications
 
-**Difficulty:** Large, 4-6 weeks, requires audio API knowledge
+**Difficulty:** Large, hypothesis 4-6 weeks, requires audio API knowledge
 
 ---
 
-### Issue 10: Record setup walkthrough and MCP config videos
+### Issue 9: Record setup walkthrough and MCP config videos
 
 **Title:** Create video tutorials for first-time users
 
 **Labels:** `documentation`, `onboarding`, `good first issue`
 
 **Body:**
-Text docs are dense. No video demos. Users don't understand what Clippy does or how to set up MCP until they've already installed and struggled.
+Text docs are dense. No video demos.
 
 **Task:** Record and upload 3 video tutorials.
 
@@ -671,24 +678,24 @@ Text docs are dense. No video demos. Users don't understand what Clippy does or 
 - Videos embedded in README
 - Setup wizard links to videos
 
-**Difficulty:** Small, 1 week, **good first issue** (no coding, good for non-coders with video editing skills)
+**Difficulty:** Small, hypothesis 1 week, **good first issue** (no coding, good for non-coders with video editing skills)
 
 ---
 
 ## Summary
 
-**Top 5 roadmap items:**
-1. **Linux support** - Broadens user base, requires X11/Wayland + AT-SPI integration
-2. **Signed installers** - Removes OS warnings, builds trust, low code effort but requires certs
-3. **Built-in chat UI** - Lowers onboarding friction, makes Clippy self-contained
-4. **Performance optimization** - Reduces CPU/memory, improves battery life
-5. **Privacy redaction improvements** - Expands browser coverage, custom rules, transparency dashboard
+**Top 5 roadmap items (free, high-impact):**
+1. **Built-in chat UI** - Works without an MCP client, lowers adoption barrier
+2. **Linux support** - Broadens user base, requires X11/Wayland + AT-SPI integration
+3. **Easier onboarding** - Setup wizard progress, per-client MCP guides, video walkthroughs
+4. **Performance profiling** - Measure and publish CPU/memory/battery baseline
+5. **Privacy redaction coverage** - Firefox and Opera detection, improved heuristics
 
 **Next steps:**
-- Open issues for Priority 1 items (Linux, signed installers, chat UI)
-- Profile resource usage (Issue 4) - low-hanging fruit
-- Create video walkthroughs (Issue 10) - high impact, no coding
+- Open issues for high-impact free work (built-in chat, Linux, onboarding, Firefox redaction)
+- Profile resource usage (Issue 3) - establishes baseline
+- Create video walkthroughs (Issue 9) - high impact, no coding
 
 ---
 
-**Last updated:** 2026-10-10
+**Last updated:** 2026-10-09

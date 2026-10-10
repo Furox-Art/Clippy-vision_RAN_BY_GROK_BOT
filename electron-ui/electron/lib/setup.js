@@ -1,6 +1,7 @@
 const path = require('path')
 const fs   = require('fs')
 const http = require('http')
+const { pullOllamaModel } = require('./ollama-pull')
 
 function createSetup({ paths, llmConfig, api, state, app, windowBridge, onLaunched }) {
     const {
@@ -445,46 +446,11 @@ function createSetup({ paths, llmConfig, api, state, app, windowBridge, onLaunch
             log(`> ollama pull ${model.name}`, 'dim')
             stepProgress('models', -1)
 
-            await new Promise((resolve, reject) => {
-                const proc = spawnHidden(OLLAMA_COMMAND, ['pull', model.name], { cwd: ROOT })
-
-                proc.stdout.on('data', (chunk) => {
-                    const lines = chunk.toString().split('\n').filter(l => l.trim())
-                    for (const line of lines) {
-                        log(line, 'dim')
-
-                        // Ollama emits human-readable GB or MB progress lines; the
-                        // two parsers keep the progress bar useful for both sizes.
-                        const match = line.match(/(\d+(?:\.\d+)?)\s*GB\s*\/\s*(\d+(?:\.\d+)?)\s*GB/)
-                        if (match) {
-                            const pct = Math.round((parseFloat(match[1]) / parseFloat(match[2])) * 100)
-                            stepProgress('models', pct)
-                            stepUpdate('models', 'running', `${model.label}: ${pct}%`)
-                        }
-
-                        const matchMB = line.match(/(\d+(?:\.\d+)?)\s*MB\s*\/\s*(\d+(?:\.\d+)?)\s*MB/)
-                        if (matchMB) {
-                            const pct = Math.round((parseFloat(matchMB[1]) / parseFloat(matchMB[2])) * 100)
-                            stepProgress('models', pct)
-                        }
-                    }
-                })
-
-                proc.stderr.on('data', (chunk) => {
-                    chunk.toString().split('\n').filter(l => l.trim()).forEach(l => log(l, 'dim'))
-                })
-
-                proc.on('exit', (code) => {
-                    if (code === 0) {
-                        log(`${model.name} ready.`, 'ok')
-                        resolve()
-                    } else {
-                        reject(new Error(`ollama pull ${model.name} failed`))
-                    }
-                })
-
-                proc.on('error', reject)
+            await pullOllamaModel(configuredOllamaBaseURL(), model.name, (percent, sub) => {
+                if (percent !== null) stepProgress('models', percent)
+                stepUpdate('models', 'running', sub)
             })
+            log(model.name + ' ready.', 'ok')
         }
 
         stepProgress('models', 100)

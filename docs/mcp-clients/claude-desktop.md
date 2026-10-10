@@ -78,6 +78,8 @@ In JSON, Windows backslashes are escaped as `\\`. On macOS the entry uses ordina
 }
 ```
 
+The macOS paths are placeholders too — including `command`. Clippy resolves whatever `which python3` returns on your machine, which is often `/opt/homebrew/bin/python3` if you installed Python with Homebrew; `/usr/bin/python3` is just Apple's bundled stub. Use the real path from **Copy JSON**.
+
 ---
 
 ## 3. Restart Claude Desktop
@@ -94,7 +96,7 @@ In Claude Desktop, look for the tools or connectors icon (the plug / hammer symb
 
 If nothing is listed:
 
-- Confirm the config file is valid JSON — a trailing comma or a missing brace makes Claude ignore it silently. Claude Desktop's own logs live under **Help → Enable Logging** if you need details.
+- Confirm the config file is valid JSON — a trailing comma or a missing brace makes Claude ignore it silently. Claude Desktop writes MCP diagnostics to `%APPDATA%\Claude\logs\mcp*.log` on Windows and `~/Library/Logs/Claude/mcp*.log` on macOS; check there for spawn errors.
 - Confirm Clippy Vision is running and has finished setup; the server is spawned on demand but needs the data folder to exist.
 - Confirm the Python path in `command` really exists on this machine.
 - Claude Desktop also has a **Settings → Developer** screen listing configured MCP servers; check there if the tools icon is empty.

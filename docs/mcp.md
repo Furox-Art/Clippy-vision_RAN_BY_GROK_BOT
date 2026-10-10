@@ -25,7 +25,6 @@ Open **Settings → Connect apps**.
 Step-by-step client guides:
 
 - [Claude Desktop](mcp-clients/claude-desktop.md) — config location, restart, verifying the tools appear
-- [LM Studio](mcp-clients/lm-studio.md) — fully local setup, a tool-calling model, what stays on your machine
 
 ### Copy JSON (any other MCP app)
 

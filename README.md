@@ -1,13 +1,27 @@
 # Clippy Vision
 
+> **⚠️ IMPORTANT NOTICE**
+>
+> This repository (`protocorn/Clippy-vision_RAN_BY_GROK_BOT`) is a **copy** of the original [Clippy Vision project](https://github.com/protocorn/clippy-vision) maintained by [protocorn](https://github.com/protocorn) (Sahil Chordia).
+>
+> **Since October 9, 2026**, starting from v2.0.0 (commit [`8271941`](https://github.com/protocorn/clippy-vision/commit/8271941)), this copy is run and maintained by **Grok Bot**, an AI assistant, as an open-source experiment.
+>
+> - **Original project**: [github.com/protocorn/clippy-vision](https://github.com/protocorn/clippy-vision)
+> - **Official releases**: Available at the upstream repository
+> - **License**: This copy remains open source under the same AGPL-3.0 license
+>
+> All credit for the original design and implementation goes to protocorn and the upstream contributors.
+
+---
+
 Clippy Vision watches your work on this computer, stores a searchable activity history locally, and lets you ask about it through a connected MCP client such as Cursor, Claude Desktop, or VS Code. The desktop app captures, summarizes, and shows the timeline.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 ![Models](https://img.shields.io/badge/models-Ollama%20local-orange)
 ![MCP](https://img.shields.io/badge/MCP-Cursor%20%7C%20Claude%20Desktop%20%7C%20VS%20Code-purple)
-[![All Contributors](https://img.shields.io/github/all-contributors/protocorn/clippy-vision?color=ee8449&style=flat-square)](#contributors)
-[![Open Source Helpers](https://www.codetriage.com/protocorn/clippy-vision/badges/users.svg)](https://www.codetriage.com/protocorn/clippy-vision)
+[![All Contributors](https://img.shields.io/github/all-contributors/protocorn/Clippy-vision_RAN_BY_GROK_BOT?color=ee8449&style=flat-square)](#contributors)
+[![Open Source Helpers](https://www.codetriage.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/badges/users.svg)](https://www.codetriage.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT)
 
 <p align="center">
   <img src="assets/clippy_vision_demo.png" alt="Explain less. Ask more. — an agent answering a LeetCode question from remembered screen activity, with nothing pasted into the chat" width="720" />
@@ -23,24 +37,16 @@ Ask in a connected MCP client, for example:
 
 ## Download
 
-**Windows is tested for 2.0.** macOS validation is pending, so macOS 2.0 installers are not included yet. macOS downloads below are the previous release (**v1.3.1**). The README describes 2.0; some features differ from 1.3.1.
+**For official, tested releases**, visit the upstream repository: **[github.com/protocorn/clippy-vision/releases](https://github.com/protocorn/clippy-vision/releases)**
+
+This experimental copy's releases (if any) are available here: **[github.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/releases](https://github.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/releases)**
 
 <p align="center">
-  <a href="https://github.com/protocorn/clippy-vision/releases/download/v2.0.0/ClippyVision-Windows-Setup-2.0.0.exe"><img src="https://img.shields.io/badge/Download-Windows%20v2.0.0-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows v2.0.0" /></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/protocorn/clippy-vision/releases/download/v1.3.1/ClippyVision-macOS-arm64-1.3.1.dmg"><img src="https://img.shields.io/badge/Download-macOS%20Apple%20Silicon%20v1.3.1%20(previous)-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS Apple Silicon v1.3.1 (previous release)" /></a>
-  &nbsp;
-  <a href="https://github.com/protocorn/clippy-vision/releases/download/v1.3.1/ClippyVision-macOS-x64-1.3.1.dmg"><img src="https://img.shields.io/badge/Download-macOS%20Intel%20v1.3.1%20(previous)-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS Intel v1.3.1 (previous release)" /></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/protocorn/clippy-vision/releases/latest">All releases &amp; older versions</a>
+  <a href="https://github.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/releases/latest">Experimental releases</a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/protocorn/clippy-vision/commits/main"><img src="https://img.shields.io/github/last-commit/protocorn/clippy-vision?style=flat-square&label=last%20commit" alt="Last commit" /></a>
+  <a href="https://github.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/commits/main"><img src="https://img.shields.io/github/last-commit/protocorn/Clippy-vision_RAN_BY_GROK_BOT?style=flat-square&label=last%20commit" alt="Last commit" /></a>
   &nbsp;
-  <a href="https://github.com/protocorn/clippy-vision/releases/latest"><img src="https://img.shields.io/github/release-date/protocorn/clippy-vision?style=flat-square&label=latest%20release" alt="Latest release date" /></a>
+  <a href="https://github.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/releases/latest"><img src="https://img.shields.io/github/release-date/protocorn/Clippy-vision_RAN_BY_GROK_BOT?style=flat-square&label=latest%20release" alt="Latest release date" /></a>
 </p>
 
 The installers are unsigned: on Windows choose **More info → Run anyway**, and on macOS right-click → **Open** the first time. First run needs internet for dependencies and for the chat model you pick in setup (for example `qwen3:8b` is ~4.7 GB).
@@ -121,8 +127,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup steps, building from source, an
 
 Thanks to everyone who has shipped code, docs, design, or ideas.
 
-[![All Contributors](https://img.shields.io/github/all-contributors/protocorn/clippy-vision?color=ee8449&style=flat-square)](#contributors)
-[![Contributors](https://img.shields.io/github/contributors/protocorn/clippy-vision?style=flat-square)](https://github.com/protocorn/clippy-vision/graphs/contributors)
+[![All Contributors](https://img.shields.io/github/all-contributors/protocorn/Clippy-vision_RAN_BY_GROK_BOT?color=ee8449&style=flat-square)](#contributors)
+[![Contributors](https://img.shields.io/github/contributors/protocorn/Clippy-vision_RAN_BY_GROK_BOT?style=flat-square)](https://github.com/protocorn/Clippy-vision_RAN_BY_GROK_BOT/graphs/contributors)
 
 <!-- CONTRIBUTORS-STATS:START -->
 
